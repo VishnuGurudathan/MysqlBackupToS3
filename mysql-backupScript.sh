@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source /path/to/db.conf
+#source /path/to/db.conf
 
 # Database details.
 
@@ -21,13 +21,13 @@ BACKUP_FOLDER=`date +%F`
 
 mkdir  $DESTINATION/$BACKUP_FOLDER
 # Logging
-echo "Created backup_folder - " $BACKUP_FOLDER $(date -u) >>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+echo "Created backup_folder - " $BACKUP_FOLDER $(date -u) >>$DESTINATION/log/log-$LOGDATE.log
 
 # Dump database to its own file
-mysqldump -h $HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME |gzip > /home/ubuntu/database_backup/$BACKUP_FOLDER/$DB_NAME-$NOWDATE.sql.gz
+mysqldump -h $HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME |gzip > $DESTINATION/$BACKUP_FOLDER/$DB_NAME-$NOWDATE.sql.gz
 
 # Logging
-echo "MySQL dump created : " $(date -u) " with filename "$DB_NAME-$NOWDATE.sql.gz>>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+echo "MySQL dump created : " $(date -u) " with filename "$DB_NAME-$NOWDATE.sql.gz>>$DESTINATION/log/log-$LOGDATE.log
 
 
 cd $DESTINATION
@@ -39,21 +39,20 @@ rm -r $BACKUP_FOLDER
 
 
 # Upload database to S3
-s3cmd put $DESTINATION/$BACKUP_FOLDER.tar.gz s3://$BUCKET/$NOWDATE/>>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+s3cmd put $DESTINATION/$BACKUP_FOLDER.tar.gz s3://$BUCKET/$NOWDATE/>>$DESTINATION/log/log-$LOGDATE.log
 
 
 # Logging
-echo "MySQL dump copyed to S3 at : " $(date -u) " to location  s3:/"/$BUCKET/$NOWDATE/>>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+echo "MySQL dump copyed to S3 at : " $(date -u) " to location  s3:/"/$BUCKET/$NOWDATE/>>$DESTINATION/log/log-$LOGDATE.log
 
 # Rotate out old backups
-s3cmd del --recursive s3://$BUCKET/$LASTDATE/>>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+s3cmd del --recursive s3://$BUCKET/$LASTDATE/>>$DESTINATION/log/log-$LOGDATE.log
 
 # Logging
-echo "Old MySQLdump file " $BUCKET/$LASTDATE " delated in S3 : " $(date -u)>>/home/ubuntu/database_backup/log/log-$LOGDATE.log
+echo "Old MySQLdump file " $BUCKET/$LASTDATE " delated in S3 : " $(date -u)>>$DESTINATION/log/log-$LOGDATE.log
 
 
 # Remove dump file from local instance.
 rm -r $BACKUP_FOLDER.tar.gz
 
-rm -r /home/ubuntu/database_backup/log/log-$LAST_LOGDATE.log
-
+rm -r $DESTINATION/log/log-$LAST_LOGDATE.log
